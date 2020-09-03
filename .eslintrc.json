@@ -3,6 +3,7 @@
   "plugins": ["prettier"],
   "rules": {
     "prettier/prettier": ["error"],
-    "eslint-disable-next-line": 0
+    "no-useless-return": 0,
+    "array-callback-return": 0
   }
 }
