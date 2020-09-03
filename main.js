@@ -12,7 +12,7 @@ client.once('ready', () => console.log('valpatches live'));
 client.on('message', (message) => {
   const { content, channel } = message;
   if (!content.startsWith(prefix) || message.author.bot) return;
-  const command = content.split(/ +/)[0].substring(1);
+  const command = content.split(/ +/)[0].substring(prefix.length);
 
   if (commands[command]) commands[command](channel);
   else commands.invalid(channel);

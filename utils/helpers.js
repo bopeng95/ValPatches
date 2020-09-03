@@ -18,7 +18,6 @@ const getRecent = (body) => {
     .text();
   const description = $(link).find('.NewsCard-module--title--1MoLu').text();
   const result = { href, date, description };
-  console.log(result);
   return result;
 };
 
@@ -26,7 +25,14 @@ const getDetails = (body) => {
   const $ = cheerio.load(body);
   const parent = $('.NewsArticleContent-module--articleSectionWrapper--3SR6V');
   const firstChild = parent.children()[0];
-  console.log($(firstChild).text());
+
+  // highlight image
+  const highlightImg = $(firstChild).find('img');
+  const hasHL = highlightImg.attr('alt').includes('Highlights');
+  const src = highlightImg.attr('src');
+  const highlight = hasHL ? src : '';
+  // console.log($(firstChild).text());
+  return { highlight };
 };
 
 module.exports = { getRecent, getDetails };
