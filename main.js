@@ -2,7 +2,7 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 
-const { prefix, commands } = require('./utils/commands');
+const { prefix, errorMessages, commands } = require('./utils/commands');
 
 const client = new Discord.Client();
 const { CLIENT_TOKEN } = process.env;
@@ -15,7 +15,7 @@ client.on('message', (message) => {
   const command = content.split(/ +/)[0].substring(prefix.length);
 
   if (commands[command]) commands[command](channel);
-  else commands.invalid(channel);
+  else channel.send(errorMessages[0]);
 });
 
 client.login(CLIENT_TOKEN);
