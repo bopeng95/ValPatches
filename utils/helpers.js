@@ -1,82 +1,44 @@
-/* eslint-disable prettier/prettier */
-const cheerio = require('cheerio');
+const fetch = require('node-fetch');
 
-const patchOnly = 'VALORANT Patch Notes';
+const api = 'https://valapi.vercel.app/patches';
 
-const getRecent = (body) => {
-  const $ = cheerio.load(body);
-  const news = $('.NewsArchive-module--newsCard--3GNFp');
-  const recent = news.filter((i, el) => {
-    const link = $(el).find('a');
-    const description = $(link).find('.NewsCard-module--title--1MoLu').text();
-    return description.startsWith(patchOnly);
-  })[0];
-  const link = $(recent).find('a');
-  const href = $(link).attr('href');
-  const date = $(link)
-    .find('.copy-02 .NewsCard-module--published--37jmR')
-    .text();
-  const patch = $(link).find('.NewsCard-module--title--1MoLu').text();
-  const result = { href, date, patch };
-  return result;
+const request = (channel, onComplete, path = '/') => {
+  const url = `${api}${path}`;
+  const onError = ({ message }) => channel.send(message);
+  fetch(url)
+    .then(async (res) => {
+      const json = await res.json();
+      if (json.error) throw new Error(json.error);
+      return json;
+    })
+    .then(onComplete)
+    .catch(onError);
 };
 
-const getDetails = (body) => {
-  const $ = cheerio.load(body);
-  const parent = $('.NewsArticleContent-module--articleSectionWrapper--3SR6V');
-  const firstChild = parent.children()[0];
-
-  let key = 'Entry';
-  let sub = '';
-  const data = {};
-
-  // highlight image
-  const highlightImg = $(firstChild).find('img');
-  const hasHL = highlightImg.attr('alt').includes('Highlights');
-  const src = highlightImg.attr('src');
-  const highlight = hasHL ? src : '';
-  // console.log($(firstChild).text());
-
-  const extractList = (main, elem) => {
-    const items = $(elem).children();
-    items.each((i, el) => {
-      const tag = el.tagName;
-      if (tag === 'ul') extractList(main, el);
-      else {
-        const list = $(el).find('ul');
-        if (list.html()) {
-          main.push($(el).find('strong').text());
-          extractList(main, list);
-        } else main.push($(el).text());
-      }
+const generateString = ({ notes }) => {
+  return Object.keys(notes).reduce((arr, item, idx) => {
+    const sections = Object.keys(notes[item]);
+    const name = item === 'Entry' ? 'Intro' : item;
+    let str = ``;
+    sections.forEach((key) => {
+      const section = notes[item][key];
+      if (Array.isArray(section)) {
+        const joined = section.join('\n- ');
+        str += `- ${joined}`;
+      } else if (key !== 'img' && key !== 'a') str += `${section}\n`;
     });
-  };
-
-  $(firstChild)
-    .children()
-    .each((i, el) => {
-      const list = [];
-      const tag = el.tagName;
-      const hasStrong = $(el).children()[0];
-      let text = $(el).text();
-      if (tag === 'h2') {
-        key = text;
-        sub = '';
-      }
-      if (tag === 'h3') sub = text;
-      if (tag === 'p' && hasStrong && hasStrong.name === 'strong') sub = text;
-      if (tag === 'img') text = $(el).attr('src');
-      if (tag === 'ul') extractList(list, el);
-
-      if (!data[key]) data[key] = {};
-      if (sub && !data[key][sub]) data[key][sub] = {};
-
-      const value = list.length ? list : text;
-      if (sub) data[key][sub][tag] = value;
-      else data[key][tag] = value;
-    });
-
-  return { highlight, data };
+    if (str) arr.push({ name, value: idx, inline: true, str });
+    return arr;
+  }, []);
 };
 
-module.exports = { getRecent, getDetails };
+const cache = (arr) => {
+  return arr.reduce((obj, item) => {
+    const temp = obj;
+    const { value, name, str } = item;
+    temp[value] = { name, str };
+    return temp;
+  }, {});
+};
+
+module.exports = { request, generateString, cache };

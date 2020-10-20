@@ -1,7 +1,6 @@
-/* eslint-disable prettier/prettier */
 const Discord = require('discord.js');
 
-const { searchRecent, getPatchNotes } = require('./functions');
+const { request, generateString, cache } = require('./helpers');
 
 const color = 0xdc3d4b;
 const prefix = 'vp!';
@@ -10,38 +9,59 @@ const errorMessages = {
   0: 'Invalid command. For available commands run ```vp!commands```',
 };
 
-let recent = {};
-
 const cmdDetail = {
   fetch: 'fetches the most recent patch notes',
+  list: 'lists out all the previous patches',
   hl: 'retrieves the highlight image of recent patch',
   command: 'lists out available commands for this bot',
 };
 
+let recent = {};
+
 const commands = {
-  fetch: async (channel) => {
-    const patch = await searchRecent();
-    if (patch.date === recent.date) channel.send('No need to fetch');
-    else {
-      channel.send('Getting latest patch notes...');
-      recent = Object.assign(recent, patch);
-      const patchNotes = await getPatchNotes(patch.href);
-      recent = Object.assign(recent, patchNotes);
-      console.log(recent.data);
-      channel.send('Finished getting recent changes!');
-    }
-  },
-  hl: (channel) => {
-    const { highlight, date, patch } = recent;
-    if (highlight) {
+  fetch: (channel) => {
+    const onComplete = ({ data }) => {
+      const fields = generateString(data);
+      recent = cache(fields);
       const embed = {
-        description: `${date} Highlights`,
-        author: { name: patch },
-        image: { url: highlight },
+        fields,
         color,
+        author: { name: 'Categories' },
+        description:
+          'type command below to see details ```\nvp!info <value>```',
       };
       channel.send({ embed });
-    } else channel.send('Fetch first!');
+    };
+    request(channel, onComplete, '/recent');
+  },
+  info: (channel, argument) => {
+    const { name, str } = recent[argument];
+    const modified = `**${name}**\n${str}`;
+    channel.send(modified);
+  },
+  list: (channel) => {
+    const onComplete = ({ data = [] }) => {
+      const fields = data.map((item) => {
+        const { date, description } = item;
+        return { name: description, value: date };
+      });
+      const embed = { color, fields };
+      channel.send({ embed });
+    };
+    request(channel, onComplete);
+  },
+  hl: (channel) => {
+    const onComplete = ({ data }) => {
+      const { highlight, description, date } = data;
+      const embed = {
+        color,
+        description: `${date} Highlights`,
+        author: { name: description },
+        image: { url: highlight },
+      };
+      channel.send({ embed });
+    };
+    request(channel, onComplete, '/recent');
   },
   commands: (channel) => {
     const fields = Object.keys(cmdDetail).reduce((arr, name) => {
