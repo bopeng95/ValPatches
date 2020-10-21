@@ -1,43 +1,28 @@
-const Discord = require('discord.js');
+const { request } = require('./helpers');
+const { getItem, isSamePatch, storeData } = require('./cache');
+const { color, icon, errorMessages, cmdDetails } = require('./fixtures');
 
-const { request, generateString, cache } = require('./helpers');
-
-const color = 0xdc3d4b;
-const prefix = 'vp!';
-const icon = new Discord.MessageAttachment('./assets/omen.png');
-const errorMessages = {
-  0: 'Invalid command. For available commands run ```vp!commands```',
+const getInfo = (key) => {
+  const content = getItem('notes');
+  if (!content[key]) return errorMessages.info;
+  const { name, str } = content[key];
+  const modified = `**${name}**\n${str}`;
+  return modified;
 };
-
-const cmdDetail = {
-  fetch: 'fetches the most recent patch notes',
-  list: 'lists out all the previous patches',
-  hl: 'retrieves the highlight image of recent patch',
-  command: 'lists out available commands for this bot',
-};
-
-let recent = {};
 
 const commands = {
-  fetch: (channel) => {
-    const onComplete = ({ data }) => {
-      const fields = generateString(data);
-      recent = cache(fields);
-      const embed = {
-        fields,
-        color,
-        author: { name: 'Categories' },
-        description:
-          'type command below to see details ```\nvp!info <value>```',
-      };
-      channel.send({ embed });
-    };
-    request(channel, onComplete, '/recent');
-  },
   info: (channel, argument) => {
-    const { name, str } = recent[argument];
-    const modified = `**${name}**\n${str}`;
-    channel.send(modified);
+    const onComplete = ({ data }) => {
+      storeData(data, { color });
+      channel.send(getItem('embed'));
+    };
+    const callback = (result) => {
+      console.log('result:', result);
+      if (!result) request(channel, onComplete, '/recent');
+      else if (argument) channel.send(getInfo(argument));
+      else channel.send(getItem('embed'));
+    };
+    isSamePatch(channel, callback);
   },
   list: (channel) => {
     const onComplete = ({ data = [] }) => {
@@ -64,8 +49,8 @@ const commands = {
     request(channel, onComplete, '/recent');
   },
   commands: (channel) => {
-    const fields = Object.keys(cmdDetail).reduce((arr, name) => {
-      const field = { name, value: cmdDetail[name] };
+    const fields = Object.keys(cmdDetails).reduce((arr, name) => {
+      const field = { name, value: cmdDetails[name] };
       arr.push(field);
       return arr;
     }, []);
@@ -78,4 +63,4 @@ const commands = {
   },
 };
 
-module.exports = { prefix, errorMessages, commands };
+module.exports = { commands };
