@@ -1,10 +1,12 @@
 const fetch = require('node-fetch');
 
+const logger = require('./logger');
+const { logMessages } = require('./fixtures');
+
 const api = 'https://valapi.vercel.app/patches';
 
-const request = (channel, onComplete, path = '/') => {
+const request = (send, onComplete, path = '/') => {
   const url = `${api}${path}`;
-  const onError = ({ message }) => channel.send(message);
   fetch(url)
     .then(async (res) => {
       const json = await res.json();
@@ -12,7 +14,11 @@ const request = (channel, onComplete, path = '/') => {
       return json;
     })
     .then(onComplete)
-    .catch(onError);
+    .catch(({ message }) => {
+      const { error } = logMessages;
+      logger.error(error('Request', message));
+      send(message);
+    });
 };
 
 module.exports = request;

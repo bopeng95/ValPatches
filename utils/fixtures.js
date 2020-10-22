@@ -3,11 +3,18 @@ const Discord = require('discord.js');
 const color = 0xdc3d4b;
 const prefix = 'vp!';
 const icon = new Discord.MessageAttachment('./assets/omen.png');
+
 const errorMessages = {
   command: 'Invalid command. For available commands run ```vp!commands```',
-  info: 'Invalid value.',
+  info: 'Invalid value. Check info for available patch values.```vp!info```',
   fetch: (sec) => `Don't fetch again so soon! Try again in ${sec} seconds.`,
   search: 'Fetch first to get the recent patch!```vp!fetch```',
+};
+
+const logMessages = {
+  fetch: (name, guild, remain) =>
+    `${name} in guild ${guild} has ${remain}s left to fetch`,
+  error: (from, msg) => `${from}: ${msg}`,
 };
 
 const cmdDetails = {
@@ -22,6 +29,7 @@ module.exports = {
   color,
   prefix,
   icon,
+  logMessages,
   errorMessages,
   cmdDetails,
 };

@@ -1,35 +1,51 @@
+const logger = require('./logger');
 const throttle = require('./throttle');
 const request = require('./request');
 const { getInfo } = require('./helpers');
 const { storeData } = require('./cache');
-const { color, icon, cmdDetails, errorMessages } = require('./fixtures');
+const {
+  color,
+  icon,
+  cmdDetails,
+  errorMessages,
+  logMessages,
+} = require('./fixtures');
 
-const fetchFunc = throttle((channel) => {
+const fetchFunc = throttle((send) => {
   const onComplete = ({ data }) => {
     storeData(data, { color });
-    channel.send('Updated to newest patch!```vp!info```');
+    send('Updated to newest patch!```vp!info```');
   };
-  request(channel, onComplete, '/recent');
+  request(send, onComplete, '/recent');
 }, 60);
 
 const commands = {
-  fetch: (channel) => {
-    const result = fetchFunc(channel);
-    const remain = fetchFunc.getRemaining();
-    if (!result) channel.send(errorMessages.fetch(remain));
+  fetch: (send, config = {}) => {
+    const {
+      author: { username },
+      guild: { name },
+    } = config;
+    const result = fetchFunc(send);
+    if (!result) {
+      const remain = fetchFunc.getRemaining();
+      logger.warn(logMessages.fetch(username, name, remain));
+      send(errorMessages.fetch(remain));
+    }
   },
-  info: (channel, patchDetails, argument) => {
+  info: (send, config = {}, argument) => {
+    const { patchDetails } = config;
     const { cat, notes } = patchDetails;
-    if (!cat) channel.send(errorMessages.search);
-    else if (!argument) channel.send(cat);
-    else channel.send(getInfo(notes, argument));
+    if (!cat) send(errorMessages.search);
+    else if (!argument) send(cat);
+    else send(getInfo(notes, argument));
   },
-  hl: (channel, patchDetails) => {
+  hl: (send, config = {}) => {
+    const { patchDetails } = config;
     const { highlight } = patchDetails;
-    if (!highlight) channel.send(errorMessages.search);
-    else channel.send(highlight);
+    if (!highlight) send(errorMessages.search);
+    else send(highlight);
   },
-  commands: (channel) => {
+  commands: (send) => {
     const fields = Object.keys(cmdDetails).reduce((arr, name) => {
       const field = { name, value: cmdDetails[name] };
       arr.push(field);
@@ -40,7 +56,7 @@ const commands = {
       icon_url: 'attachment://omen.png',
     };
     const embed = { author, fields, color };
-    channel.send({ embed, files: [icon] });
+    send({ embed, files: [icon] });
   },
 };
 

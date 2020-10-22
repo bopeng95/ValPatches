@@ -1,7 +1,8 @@
 require('dotenv').config();
 const Discord = require('discord.js');
 
-const { prefix, errorMessages } = require('./utils/fixtures');
+const logger = require('./utils/logger');
+const { prefix, errorMessages, logMessages } = require('./utils/fixtures');
 const { commands } = require('./utils/commands');
 const { getPatchDetails } = require('./utils/cache');
 
@@ -9,17 +10,28 @@ const client = new Discord.Client();
 
 const { CLIENT_TOKEN } = process.env;
 
-client.once('ready', () => console.log('valpatches ready'));
+client.once('ready', () => logger.info('valpatches ready'));
 
 client.on('message', (message) => {
-  const { content, channel } = message;
-  if (!content.startsWith(prefix) || message.author.bot) return;
+  const { content, channel, author, guild } = message;
+  if (!content.startsWith(prefix) || author.bot) return;
   const splitContent = content.split(/ +/);
   const command = splitContent[0].substring(prefix.length);
 
+  const send = (msg) => {
+    channel.send(msg).catch((err) => {
+      const { error } = logMessages;
+      const from = `Message (${author.username} from ${guild.name})`;
+      logger.error(error(from, err.message));
+      channel.send(err.message);
+    });
+  };
+
   const patchDetails = getPatchDetails() || {};
-  if (commands[command])
-    commands[command](channel, patchDetails, splitContent[1]);
+  const config = { patchDetails, author, guild };
+  const arg = splitContent[1];
+
+  if (commands[command]) commands[command](send, config, arg);
   else channel.send(errorMessages.command);
 });
 
