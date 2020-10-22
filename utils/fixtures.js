@@ -6,13 +6,16 @@ const icon = new Discord.MessageAttachment('./assets/omen.png');
 const errorMessages = {
   command: 'Invalid command. For available commands run ```vp!commands```',
   info: 'Invalid value.',
+  fetch: (sec) => `Don't fetch again so soon! Try again in ${sec} seconds.`,
+  search: 'Fetch first to get the recent patch!```vp!fetch```',
 };
 
 const cmdDetails = {
-  cat: 'fetches the most recent patch notes',
-  list: 'lists out all the previous patches',
+  fetch: 'fetches the most recent patch notes',
+  info: 'lists out patch categories',
+  'info <value>': 'displays the category details',
   hl: 'retrieves the highlight image of recent patch',
-  command: 'lists out available commands for this bot',
+  commands: 'lists out available commands for this bot',
 };
 
 module.exports = {

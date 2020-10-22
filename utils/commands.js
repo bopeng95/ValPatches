@@ -1,52 +1,33 @@
-const { request } = require('./helpers');
-const { getItem, isSamePatch, storeData } = require('./cache');
-const { color, icon, errorMessages, cmdDetails } = require('./fixtures');
+const throttle = require('./throttle');
+const request = require('./request');
+const { getInfo } = require('./helpers');
+const { storeData } = require('./cache');
+const { color, icon, cmdDetails, errorMessages } = require('./fixtures');
 
-const getInfo = (key) => {
-  const content = getItem('notes');
-  if (!content[key]) return errorMessages.info;
-  const { name, str } = content[key];
-  const modified = `**${name}**\n${str}`;
-  return modified;
-};
+const fetchFunc = throttle((channel) => {
+  const onComplete = ({ data }) => {
+    storeData(data, { color });
+    channel.send('Updated to newest patch!```vp!info```');
+  };
+  request(channel, onComplete, '/recent');
+}, 60);
 
 const commands = {
-  info: (channel, argument) => {
-    const onComplete = ({ data }) => {
-      storeData(data, { color });
-      channel.send(getItem('embed'));
-    };
-    const callback = (result) => {
-      console.log('result:', result);
-      if (!result) request(channel, onComplete, '/recent');
-      else if (argument) channel.send(getInfo(argument));
-      else channel.send(getItem('embed'));
-    };
-    isSamePatch(channel, callback);
+  fetch: (channel) => {
+    const result = fetchFunc(channel);
+    const remain = fetchFunc.getRemaining();
+    if (!result) channel.send(errorMessages.fetch(remain));
   },
-  list: (channel) => {
-    const onComplete = ({ data = [] }) => {
-      const fields = data.map((item) => {
-        const { date, description } = item;
-        return { name: description, value: date };
-      });
-      const embed = { color, fields };
-      channel.send({ embed });
-    };
-    request(channel, onComplete);
+  info: (channel, patchDetails, argument) => {
+    const { cat, notes } = patchDetails;
+    if (!cat) channel.send(errorMessages.search);
+    else if (!argument) channel.send(cat);
+    else channel.send(getInfo(notes, argument));
   },
-  hl: (channel) => {
-    const onComplete = ({ data }) => {
-      const { highlight, description, date } = data;
-      const embed = {
-        color,
-        description: `${date} Highlights`,
-        author: { name: description },
-        image: { url: highlight },
-      };
-      channel.send({ embed });
-    };
-    request(channel, onComplete, '/recent');
+  hl: (channel, patchDetails) => {
+    const { highlight } = patchDetails;
+    if (!highlight) channel.send(errorMessages.search);
+    else channel.send(highlight);
   },
   commands: (channel) => {
     const fields = Object.keys(cmdDetails).reduce((arr, name) => {
