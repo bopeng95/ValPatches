@@ -2,7 +2,6 @@
 ## about
 - discord bot for scraping valorant patch notes
 - fetches from my api [here](https://github.com/bopeng95/valapi)
-- here is the link to my [discord bot](https://discord.com/api/oauth2/authorize?client_id=750791279578841153&permissions=8&scope=bot) or top right of this repository
 ## available commands
 ### prefix - `vp!`
 ```
