@@ -10,7 +10,10 @@ const client = new Discord.Client();
 
 const { CLIENT_TOKEN } = process.env;
 
-client.once('ready', () => logger.info('valpatches ready'));
+client.once('ready', () => {
+  const { guilds } = client;
+  logger.info(logMessages.start(guilds.cache.size));
+});
 
 client.on('message', (message) => {
   const { content, channel, author, guild } = message;

@@ -12,9 +12,10 @@ const errorMessages = {
 };
 
 const logMessages = {
+  start: (size) => ` ValPatches ready. Total guild size is now ${size}`,
   fetch: (name, guild, remain) =>
-    `${name} in guild ${guild} has ${remain}s left to fetch`,
-  error: (from, msg) => `${from}: ${msg}`,
+    ` ${name} in guild ${guild} has ${remain}s left to fetch`,
+  error: (from, msg) => ` ${from}: ${msg}`,
 };
 
 const cmdDetails = {
